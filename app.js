@@ -18,7 +18,7 @@
       couleur: "",
       nav: { cols: 4, rows: 3, a: [], b: [], faits: [] },
       ech: { taille: 11, cibles: {}, departs: ["", "", "", ""] },
-      clos: { taille: 5, jardins: [[], [], [], []] },
+      clos: { taille: 8, jardins: [[], [], [], []] },
       statue: "",
     };
   }
@@ -250,7 +250,7 @@
   $("statue").innerHTML += S.STATUES.map((s) => `<option>${s}</option>`).join("");
   $("statue").addEventListener("change", (e) => { etat.statue = e.target.value; sauver(); });
   $("clos-taille").addEventListener("change", (e) => {
-    etat.clos.taille = Math.max(3, Math.min(10, parseInt(e.target.value, 10) || 5)); sauver();
+    etat.clos.taille = Math.max(3, Math.min(10, parseInt(e.target.value, 10) || 8)); sauver();
   });
 
   // ---------- Gardiens ----------

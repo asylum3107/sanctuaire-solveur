@@ -48,7 +48,8 @@ input[type=number] { width: 4.5em; }
 .plateau td.sombre { background: var(--case-sombre); }
 .plateau td.etape { outline: 3px dashed var(--etape); outline-offset: -4px; }
 .plateau td.bateau, .jardin td.statue { background: color-mix(in srgb, var(--accent) 35%, var(--case)); }
-.jardin td { width: 30px; height: 30px; font-size: 1rem; }
+.jardin td { width: 28px; height: 28px; font-size: .9rem; }
+#jardins { grid-template-columns: repeat(auto-fit, minmax(270px, 1fr)); max-width: 640px; }
 sub { font-size: .65rem; color: var(--doux); }
 table.form td, table.form th { padding: 4px 8px; border-bottom: 1px solid var(--bord); text-align: left; }
 footer { padding-bottom: 24px; font-size: .85rem; }
