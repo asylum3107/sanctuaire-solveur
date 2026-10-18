@@ -17,7 +17,7 @@
       fleurs: [null, null, null, null],
       couleur: "",
       nav: { cols: 4, rows: 3, a: [], b: [], faits: [] },
-      ech: { taille: 11, cibles: {}, departs: ["", "", "", ""] },
+      ech: { taille: 11, cibles: {}, departs: {}, ordre: ["tn", "tb", "fn", "fb"] },
       clos: { taille: 8, jardins: [[], [], [], []] },
       statue: "",
     };
@@ -144,17 +144,20 @@
   }));
 
   // ---------- Échecs ----------
+  // Les rôles sont imposés par le jeu : chaque personnage est une pièce. La tour noire joue en premier.
+  if (Array.isArray(etat.ech.departs)) etat.ech.departs = {};
+  const pieceParId = (id) => PIECES.find((p) => p.id === id);
   function rendreEchecsOutils() {
     const opts = PIECES.map((p) => `<option value="c-${p.id}">Cible ${p.symbole} ${p.nom}</option>`)
-      .concat([0, 1, 2, 3].map((i) => `<option value="d-${i}">Départ joueur ${i + 1}</option>`));
+      .concat(PIECES.map((p) => `<option value="d-${p.id}">Départ ${p.symbole} ${p.nom}</option>`));
     $("ech-outil").innerHTML = opts.join("");
   }
   function rendreEchecs() {
     const n = etat.ech.taille;
     $("ech-taille").value = n;
-    const best = calculEchecs();
-    const cheminSet = {};
-    if (best) best.res.forEach((r) => r.chemin.forEach((c, k) => { if (k < r.chemin.length - 1) cheminSet[c] = true; }));
+    const plan = calculEchecs();
+    const etapes = {};
+    if (plan && plan.tours) plan.tours.flat().forEach((a) => { if (a.vers) etapes[a.vers] = true; });
     let h = `<table class="echiquier"><tr><th></th>${Array.from({ length: n }, (_, x) => `<th>${String.fromCharCode(65 + x)}</th>`).join("")}</tr>`;
     for (let y = 0; y < n; y++) {
       h += `<tr><th>${y + 1}</th>`;
@@ -162,8 +165,8 @@
         const c = S.nomCase({ x, y });
         let txt = "";
         PIECES.forEach((p) => { if ((etat.ech.cibles[p.id] || "").toUpperCase() === c) txt += p.symbole; });
-        etat.ech.departs.forEach((d, i) => { if ((d || "").toUpperCase() === c) txt += `<sub>J${i + 1}</sub>`; });
-        h += `<td class="${(x + y) % 2 ? "sombre" : ""} ${cheminSet[c] ? "etape" : ""}" data-c="${c}">${txt}</td>`;
+        PIECES.forEach((p) => { if ((etat.ech.departs[p.id] || "").toUpperCase() === c) txt += `<sub>${p.symbole}D</sub>`; });
+        h += `<td class="${(x + y) % 2 ? "sombre" : ""} ${etapes[c] ? "etape" : ""}" data-c="${c}">${txt}</td>`;
       }
       h += "</tr>";
     }
@@ -171,8 +174,8 @@
     $("ech-plateau").querySelectorAll("td").forEach((td) => td.addEventListener("click", () => {
       const [k, v] = $("ech-outil").value.split("-");
       const c = td.dataset.c;
-      if (k === "c") etat.ech.cibles[v] = etat.ech.cibles[v] === c ? "" : c;
-      else etat.ech.departs[v] = etat.ech.departs[v] === c ? "" : c;
+      const cible = k === "c" ? etat.ech.cibles : etat.ech.departs;
+      cible[v] = cible[v] === c ? "" : c;
       sauver();
     }));
 
@@ -180,38 +183,52 @@
       if (inp === document.activeElement) return;
       inp.value = (inp.dataset.c ? etat.ech.cibles[inp.dataset.c] : etat.ech.departs[inp.dataset.d]) || "";
     });
+    $("ech-form").querySelectorAll("select").forEach((sel) => { sel.value = etat.ech.ordre[sel.dataset.o]; });
 
     let r = "";
     const cibles = PIECES.filter((p) => S.parseCase(etat.ech.cibles[p.id]));
-    if (cibles.length < 4) r += `<p class="info">Cases trouvées : ${cibles.length}/4. Une fois les 4 notées, place-toi dessus pendant le combat.</p>`;
-    const nbDeparts = etat.ech.departs.filter((d) => S.parseCase(d)).length;
-    if (cibles.length === 4 && nbDeparts < 4) r += `<p class="info">Renseigne la case de départ des 4 joueurs dans le combat pour obtenir les déplacements.</p>`;
-    if (cibles.length === 4 && nbDeparts === 4) {
-      if (!best) r += `<p class="alerte">Aucune répartition possible : vérifie les cases (un fou ne peut atteindre que des cases de sa couleur de départ).</p>`;
-      else {
-        r += `<p class="ok">Répartition optimale : ${best.max} coup(s) max par joueur, ${best.tot} au total.</p><ul class="etapes">` +
-          best.res.map((x) => `<li><b>Joueur ${x.joueur}</b> joue <b>${x.nom}</b> : ${x.coups === 0 ? "déjà en place" : x.depart.toUpperCase() + " → " + x.chemin.join(" → ")}</li>`).join("") +
-          "</ul><p class='petit'>Un coup = un déplacement en ligne droite (tour) ou en diagonale (fou). Les joueurs déjà en place peuvent donner des PA à ceux qui ont 2 coups à faire.</p>";
-      }
+    const nbDeparts = PIECES.filter((p) => S.parseCase(etat.ech.departs[p.id])).length;
+    if (cibles.length < 4) r += `<p class="info">Cases cibles trouvées : ${cibles.length}/4.</p>`;
+    else if (nbDeparts < 4) r += `<p class="info">Au début du combat, renseigne la case de départ de chaque pièce (${nbDeparts}/4) pour obtenir les déplacements tour par tour.</p>`;
+    else if (plan.erreur) r += `<p class="alerte">Impossible : ${plan.erreur}.</p>`;
+    else {
+      r += `<p class="ok">Placement en ${plan.tours.length} tour(s), dans l'ordre de jeu :</p>`;
+      plan.tours.forEach((t, k) => {
+        r += `<p><b>Tour ${k + 1}</b></p><ul class="etapes">` + t.map((a) => {
+          const p = pieceParId(a.id);
+          if (a.attend) return `<li>${p.symbole} ${a.nom} : ${a.enPlace ? "déjà en place, ne bouge pas (peut donner des PA)" : "attend (passe son tour)"}</li>`;
+          return `<li>${p.symbole} <b>${a.nom}</b> : ${a.de} → <b>${a.vers}</b></li>`;
+        }).join("") + "</ul>";
+      });
+      r += "<p class='petit'>Un coup = un déplacement en ligne droite (tour) ou en diagonale (fou), sans traverser une autre pièce. Le plan n'utilise pas le don de PA.</p>";
     }
     $("echecs-res").innerHTML = r;
   }
   function rendreEchecsForm() {
-    $("ech-form").innerHTML = "<table class='form'>" +
-      PIECES.map((p) => `<tr><td>${p.symbole} ${p.nom}</td><td><input data-c="${p.id}" placeholder="ex. C4" size="4"></td></tr>`).join("") +
-      [0, 1, 2, 3].map((i) => `<tr><td>Départ joueur ${i + 1}</td><td><input data-d="${i}" placeholder="ex. A1" size="4"></td></tr>`).join("") +
-      "</table>";
+    const optsOrdre = PIECES.map((p) => `<option value="${p.id}">${p.symbole} ${p.nom}</option>`).join("");
+    $("ech-form").innerHTML = "<table class='form'><tr><th>Pièce</th><th>Cible</th><th>Départ</th></tr>" +
+      PIECES.map((p) => `<tr><td>${p.symbole} ${p.nom}</td><td><input data-c="${p.id}" placeholder="ex. C4" size="4"></td><td><input data-d="${p.id}" placeholder="ex. A1" size="4"></td></tr>`).join("") +
+      "</table><p class='petit'>Ordre de jeu dans le combat :</p><div class='ligne'>" +
+      [0, 1, 2, 3].map((i) => `${i + 1}. <select data-o="${i}">${optsOrdre}</select>`).join(" ") + "</div>";
     $("ech-form").querySelectorAll("input").forEach((inp) => inp.addEventListener("change", () => {
       const v = inp.value.trim().toUpperCase();
       if (inp.dataset.c) etat.ech.cibles[inp.dataset.c] = v; else etat.ech.departs[inp.dataset.d] = v;
       sauver();
     }));
+    $("ech-form").querySelectorAll("select").forEach((sel) => sel.addEventListener("change", () => {
+      // échange avec la position qui avait déjà cette pièce, pour garder un ordre valide
+      const o = etat.ech.ordre, i = parseInt(sel.dataset.o, 10), j = o.indexOf(sel.value);
+      [o[i], o[j]] = [o[j], o[i]];
+      sauver();
+    }));
   }
   function calculEchecs() {
-    const pieces = PIECES.map((p) => ({ nom: p.nom, type: p.type, cible: etat.ech.cibles[p.id] }));
-    if (pieces.some((p) => !S.parseCase(p.cible))) return null;
-    if (etat.ech.departs.some((d) => !S.parseCase(d))) return null;
-    return S.meilleureRepartition(etat.ech.departs, pieces, etat.ech.taille);
+    const pieces = etat.ech.ordre.map((id) => {
+      const p = pieceParId(id);
+      return { id, nom: p.nom, type: p.type, cible: etat.ech.cibles[id], depart: etat.ech.departs[id] };
+    });
+    if (pieces.some((p) => !S.parseCase(p.cible) || !S.parseCase(p.depart))) return null;
+    return S.planifierEchecs(pieces, etat.ech.taille, 4);
   }
   $("ech-taille").addEventListener("change", (e) => {
     etat.ech.taille = Math.max(4, Math.min(16, parseInt(e.target.value, 10) || 11)); sauver();

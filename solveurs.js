@@ -156,6 +156,99 @@
     return out;
   }
 
+  // Cases atteignables en un coup (glissade en ligne ou en diagonale, bloquée par les pièces).
+  function coupsPossibles(type, p, occupees, taille) {
+    const dirs = type === "tour" ? [[1, 0], [-1, 0], [0, 1], [0, -1]] : [[1, 1], [1, -1], [-1, 1], [-1, -1]];
+    const out = [];
+    dirs.forEach(([dx, dy]) => {
+      let x = p.x + dx, y = p.y + dy;
+      while (x >= 0 && y >= 0 && x < taille && y < taille && !occupees.has(x + "," + y)) {
+        out.push({ x, y });
+        x += dx; y += dy;
+      }
+    });
+    return out;
+  }
+
+  // Nombre minimal de coups pour aller de p à cible en contournant les cases occupées (Infinity si impossible).
+  function distance(type, p, cible, occupees, taille) {
+    const cle = (q) => q.x + "," + q.y;
+    if (cle(p) === cle(cible)) return 0;
+    const vus = new Set([cle(p)]);
+    let front = [p], d = 0;
+    while (front.length && d < 6) {
+      d++;
+      const suiv = [];
+      for (const q of front) {
+        for (const r of coupsPossibles(type, q, occupees, taille)) {
+          if (cle(r) === cle(cible)) return d;
+          if (!vus.has(cle(r))) { vus.add(cle(r)); suiv.push(r); }
+        }
+      }
+      front = suiv;
+    }
+    return Infinity;
+  }
+
+  // Plan tour par tour. pieces : [{ id, nom, type, depart:"A1", cible:"C4" }] dans l'ordre de jeu.
+  // Chaque pièce joue un coup (ou attend) à son tour ; une pièce ne traverse ni n'occupe la case d'une autre.
+  // Renvoie { tours: [[{ id, nom, de, vers } | { id, nom, attend: true }]] } ou { erreur }.
+  function planifierEchecs(pieces, taille, maxTours) {
+    const pos = pieces.map((p) => parseCase(p.depart));
+    const cib = pieces.map((p) => parseCase(p.cible));
+    if (pos.some((p) => !p) || cib.some((p) => !p)) return { erreur: "cases manquantes" };
+    const cles = (l) => l.map((q) => q.x + "," + q.y);
+    if (new Set(cles(pos)).size < 4) return { erreur: "deux pièces ont la même case de départ" };
+    if (new Set(cles(cib)).size < 4) return { erreur: "deux pièces ont la même case cible" };
+    for (let i = 0; i < 4; i++) {
+      if (pieces[i].type === "fou" && (pos[i].x + pos[i].y) % 2 !== (cib[i].x + cib[i].y) % 2) {
+        return { erreur: `${pieces[i].nom} ne peut pas atteindre ${pieces[i].cible} : un fou reste toujours sur la même couleur de case` };
+      }
+    }
+    const total = maxTours * 4;
+    const echecs = new Set();
+    const actions = [];
+    // Recherche en profondeur : à chaque demi-tour, la pièce joue un coup qui la rapproche de sa cible, ou attend.
+    function cherche(etape, positions) {
+      if (positions.every((q, i) => q.x === cib[i].x && q.y === cib[i].y)) return true;
+      if (etape >= total) return false;
+      const cle = etape + "|" + cles(positions).join(";");
+      if (echecs.has(cle)) return false;
+      const i = etape % 4;
+      for (let j = 0; j < 4; j++) {
+        const reste = Math.ceil((total - etape - ((j - i + 4) % 4)) / 4);
+        if (distance(pieces[j].type, positions[j], cib[j], new Set(), taille) > reste) { echecs.add(cle); return false; }
+      }
+      const autres = new Set(cles(positions.filter((_, k) => k !== i)));
+      const p = positions[i];
+      const enPlace = p.x === cib[i].x && p.y === cib[i].y;
+      const options = [];
+      if (!enPlace) {
+        const dAct = distance(pieces[i].type, p, cib[i], autres, taille);
+        coupsPossibles(pieces[i].type, p, autres, taille).forEach((q) => {
+          const d = distance(pieces[i].type, q, cib[i], autres, taille);
+          if (d < dAct) options.push({ q, d });
+        });
+        options.sort((a, b) => a.d - b.d);
+      }
+      for (const o of options) {
+        const np = positions.slice(); np[i] = o.q;
+        actions.push({ id: pieces[i].id, nom: pieces[i].nom, de: nomCase(p), vers: nomCase(o.q) });
+        if (cherche(etape + 1, np)) return true;
+        actions.pop();
+      }
+      actions.push({ id: pieces[i].id, nom: pieces[i].nom, attend: true, enPlace });
+      if (cherche(etape + 1, positions)) return true;
+      actions.pop();
+      echecs.add(cle);
+      return false;
+    }
+    if (!cherche(0, pos)) return { erreur: `pas de solution en ${maxTours} tours sans don de PA` };
+    const tours = [];
+    actions.forEach((a, k) => { (tours[Math.floor(k / 4)] = tours[Math.floor(k / 4)] || []).push(a); });
+    return { tours };
+  }
+
   // ---------- Clos des Protecteurs ----------
 
   function solveClos(statue, couleur) {
@@ -179,7 +272,7 @@
 
   const api = {
     OBJETS, COULEURS, STATUES, TABLE_CLOS,
-    solveOuvrage, solveNavale, solveEchecs, meilleureRepartition, cheminTour, cheminFou,
+    solveOuvrage, solveNavale, solveEchecs, meilleureRepartition, planifierEchecs, cheminTour, cheminFou,
     parseCase, nomCase, solveClos, solveGardiens,
   };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
