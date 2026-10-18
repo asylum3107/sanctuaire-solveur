@@ -112,12 +112,13 @@
     return ok ? [ok, arr] : null;
   }
 
-  function nomCase(p) { return String.fromCharCode(65 + p.x) + (p.y + 1); }
+  // Échiquier du jeu : lettres pour les lignes (à gauche), numéros pour les colonnes (en haut). "J3" = ligne J, colonne 3.
+  function nomCase(p) { return String.fromCharCode(65 + p.y) + (p.x + 1); }
 
   function parseCase(s) {
     const m = /^\s*([A-Za-z])\s*(\d{1,2})\s*$/.exec(s || "");
     if (!m) return null;
-    return { x: m[1].toUpperCase().charCodeAt(0) - 65, y: parseInt(m[2], 10) - 1 };
+    return { x: parseInt(m[2], 10) - 1, y: m[1].toUpperCase().charCodeAt(0) - 65 };
   }
 
   // pieces: [{ nom, type: "tour"|"fou", cible:"C4", depart:"A1" }]

@@ -22,13 +22,17 @@
   const ROMAINS = ["I", "II", "III", "IV"];
   const COUL_PIED = ["#8a5cf6", "#e8902a", "#2f80ed", "#d6458f"];
 
+  // Les personnages commencent toujours le combat d'échecs sur ces 4 cases.
+  const CASES_DEPART = ["J3", "J5", "J7", "J9"];
+  const DEPARTS_DEFAUT = { tn: "J3", tb: "J5", fn: "J7", fb: "J9" };
+
   function etatVide() {
     return {
       piedestaux: [["", ""], ["", ""], ["", ""], ["", ""]],
       fleurs: [null, null, null, null],
       couleur: "",
       nav: { cols: 4, rows: 3, a: [], b: [], faits: [] },
-      ech: { taille: 11, cibles: {}, departs: {}, ordre: ["tn", "tb", "fn", "fb"] },
+      ech: { taille: 11, cibles: {}, departs: { ...DEPARTS_DEFAUT }, ordre: ["tn", "tb", "fn", "fb"] },
       clos: { taille: 8, jardins: [[], [], [], []] },
       statue: "",
     };
@@ -216,11 +220,12 @@
 
   // ---------- Échecs ----------
   // Les rôles sont imposés par le jeu : chaque personnage est une pièce. La tour noire joue en premier.
-  if (Array.isArray(etat.ech.departs)) etat.ech.departs = {};
+  // Anciennes sauvegardes : départs libres → on revient aux 4 cases fixes.
+  const deps = etat.ech.departs;
+  if (Array.isArray(deps) || CASES_DEPART.some((c) => !Object.values(deps).includes(c))) etat.ech.departs = { ...DEPARTS_DEFAUT };
   const pieceParId = (id) => PIECES.find((p) => p.id === id);
   function rendreEchecsOutils() {
-    const opts = PIECES.map((p) => `<option value="c-${p.id}">🎯 Cible ${p.symbole} ${p.nom}</option>`)
-      .concat(PIECES.map((p) => `<option value="d-${p.id}">🚩 Départ ${p.symbole} ${p.nom}</option>`));
+    const opts = PIECES.map((p) => `<option value="c-${p.id}">🎯 Cible ${p.symbole} ${p.nom}</option>`);
     $("ech-outil").innerHTML = opts.join("");
   }
   function rendreEchecs() {
@@ -232,9 +237,9 @@
       let k = 0;
       plan.tours.forEach((t) => t.forEach((a) => { if (a.vers) etapes[a.vers] = (etapes[a.vers] ? etapes[a.vers] + "," : "") + (++k); }));
     }
-    let h = `<table class="echiquier"><tr><th></th>${Array.from({ length: n }, (_, x) => `<th>${String.fromCharCode(65 + x)}</th>`).join("")}</tr>`;
+    let h = `<table class="echiquier"><tr><th></th>${Array.from({ length: n }, (_, x) => `<th>${x + 1}</th>`).join("")}</tr>`;
     for (let y = 0; y < n; y++) {
-      h += `<tr><th>${y + 1}</th>`;
+      h += `<tr><th>${String.fromCharCode(65 + y)}</th>`;
       for (let x = 0; x < n; x++) {
         const c = S.nomCase({ x, y });
         let txt = "", cls = "";
@@ -249,16 +254,17 @@
     $("ech-plateau").querySelectorAll("td").forEach((td) => td.addEventListener("click", () => {
       const [k, v] = $("ech-outil").value.split("-");
       const c = td.dataset.c;
-      const cible = k === "c" ? etat.ech.cibles : etat.ech.departs;
-      cible[v] = cible[v] === c ? "" : c;
+      if (k !== "c") return;
+      etat.ech.cibles[v] = etat.ech.cibles[v] === c ? "" : c;
       sauver();
     }));
 
     $("ech-form").querySelectorAll("input").forEach((inp) => {
       if (inp === document.activeElement) return;
-      inp.value = (inp.dataset.c ? etat.ech.cibles[inp.dataset.c] : etat.ech.departs[inp.dataset.d]) || "";
+      inp.value = etat.ech.cibles[inp.dataset.c] || "";
     });
-    $("ech-form").querySelectorAll("select").forEach((sel) => { sel.value = etat.ech.ordre[sel.dataset.o]; });
+    $("ech-form").querySelectorAll("select[data-o]").forEach((sel) => { sel.value = etat.ech.ordre[sel.dataset.o]; });
+    $("ech-form").querySelectorAll("select[data-d]").forEach((sel) => { sel.value = etat.ech.departs[sel.dataset.d]; });
 
     let r = "";
     const cibles = PIECES.filter((p) => S.parseCase(etat.ech.cibles[p.id]));
@@ -283,15 +289,23 @@
   function rendreEchecsForm() {
     const optsOrdre = PIECES.map((p) => `<option value="${p.id}">${p.symbole} ${p.nom}</option>`).join("");
     $("ech-form").innerHTML = "<table class='form'><tr><th>Pièce</th><th>🎯 Cible</th><th>🚩 Départ</th></tr>" +
-      PIECES.map((p) => `<tr><td><span class="piece ${p.camp}">${p.symbole}</span> ${p.nom}</td><td><input data-c="${p.id}" placeholder="ex. C4" size="4"></td><td><input data-d="${p.id}" placeholder="ex. A1" size="4"></td></tr>`).join("") +
+      PIECES.map((p) => `<tr><td><span class="piece ${p.camp}">${p.symbole}</span> ${p.nom}</td><td><input data-c="${p.id}" placeholder="ex. C4" size="4"></td><td><select data-d="${p.id}">${CASES_DEPART.map((c) => `<option>${c}</option>`).join("")}</select></td></tr>`).join("") +
       "</table><p class='petit'>Ordre de jeu dans le combat :</p><div class='ordre'>" +
       [0, 1, 2, 3].map((i) => `<span class="num">${i + 1}</span><select data-o="${i}">${optsOrdre}</select>`).join("") + "</div>";
     $("ech-form").querySelectorAll("input").forEach((inp) => inp.addEventListener("change", () => {
       const v = inp.value.trim().toUpperCase();
-      if (inp.dataset.c) etat.ech.cibles[inp.dataset.c] = v; else etat.ech.departs[inp.dataset.d] = v;
+      etat.ech.cibles[inp.dataset.c] = v;
       sauver();
     }));
-    $("ech-form").querySelectorAll("select").forEach((sel) => sel.addEventListener("change", () => {
+    $("ech-form").querySelectorAll("select[data-d]").forEach((sel) => sel.addEventListener("change", () => {
+      // échange avec la pièce qui occupait déjà cette case de départ
+      const d = etat.ech.departs, id = sel.dataset.d;
+      const autre = Object.keys(d).find((k) => d[k] === sel.value);
+      if (autre) d[autre] = d[id];
+      d[id] = sel.value;
+      sauver();
+    }));
+    $("ech-form").querySelectorAll("select[data-o]").forEach((sel) => sel.addEventListener("change", () => {
       // échange avec la position qui avait déjà cette pièce, pour garder un ordre valide
       const o = etat.ech.ordre, i = parseInt(sel.dataset.o, 10), j = o.indexOf(sel.value);
       [o[i], o[j]] = [o[j], o[i]];
