@@ -17,7 +17,7 @@
       fleurs: [null, null, null, null],
       couleur: "",
       nav: { cols: 4, rows: 3, a: [], b: [], faits: [] },
-      ech: { taille: 8, cibles: {}, departs: ["", "", "", ""] },
+      ech: { taille: 11, cibles: {}, departs: ["", "", "", ""] },
       clos: { taille: 5, jardins: [[], [], [], []] },
       statue: "",
     };
@@ -214,7 +214,7 @@
     return S.meilleureRepartition(etat.ech.departs, pieces, etat.ech.taille);
   }
   $("ech-taille").addEventListener("change", (e) => {
-    etat.ech.taille = Math.max(4, Math.min(16, parseInt(e.target.value, 10) || 8)); sauver();
+    etat.ech.taille = Math.max(4, Math.min(16, parseInt(e.target.value, 10) || 11)); sauver();
   });
 
   // ---------- Clos ----------
