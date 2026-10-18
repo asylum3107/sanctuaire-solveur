@@ -37,6 +37,14 @@ h1 { margin: 0; font-size: 1.7rem; letter-spacing: .3px; color: #ffe7a8; text-sh
 .actions button:hover { background: #ffffff33; }
 .actions .danger { color: #ffc0b8; }
 #msg { color: #ffe7a8; font-weight: 600; }
+.session { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: 12px; padding: 8px 12px; border-radius: 12px;
+  background: #00000033; border: 1px solid #ffffff30; }
+.session button, .session input { background: #ffffff1f; color: #fff; border-color: #ffffff40; }
+.session input::placeholder { color: #ffffff99; }
+.session button:hover { background: #ffffff33; }
+.session-titre { font-weight: 700; color: #ffe7a8; }
+.session-id { font-family: ui-monospace, monospace; font-size: 1.15rem; letter-spacing: 2px; background: #ffe7a8; color: #2d2450; padding: 1px 10px; border-radius: 8px; }
+.session-info, .session-ou { color: #e6e0f5; font-size: .9rem; }
 #onglets { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 14px; }
 #onglets button { border: none; border-radius: 10px 10px 0 0; padding: 9px 14px; background: #ffffff1a; color: #f2eefc; font-weight: 600; }
 #onglets button span { margin-right: 6px; }

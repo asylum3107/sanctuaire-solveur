@@ -56,9 +56,13 @@
     }
     return a;
   }
-  function sauver() {
+  function enregistrer() {
     try { localStorage.setItem(CLE, JSON.stringify(etat)); } catch (e) { /* stockage indisponible */ }
+  }
+  function sauver() {
+    enregistrer();
     tout();
+    if (window.SyncRaid) window.SyncRaid.envoyer();
   }
   function flash(t) { $("msg").textContent = t; setTimeout(() => { $("msg").textContent = ""; }, 2500); }
 
@@ -77,9 +81,14 @@
   });
   $("reset").addEventListener("click", () => {
     if (!confirm("Effacer toutes les données du raid ?")) return;
-    etat = etatVide(); history.replaceState(null, "", location.pathname);
-    rendreOuvrageForm(); sauver();
+    viderEtat();
+    sauver();
   });
+  function viderEtat() {
+    etat = etatVide();
+    history.replaceState(null, "", location.pathname + location.search);
+    rendreOuvrageForm();
+  }
 
   // ---------- Progression ----------
   function rendreProgression() {
@@ -421,4 +430,20 @@
   }
   // Les formulaires ne sont reconstruits qu'au reset (garde le focus pendant la saisie)
   rendreOuvrageForm(); rendreEchecsOutils(); rendreEchecsForm(); rendreTableClos(); tout();
+
+  // Interface utilisée par sync.js pour les sessions de raid partagées.
+  window.AppRaid = {
+    cles: Object.keys(etatVide()),
+    etat: () => etat,
+    vider() { viderEtat(); enregistrer(); tout(); },
+    // Applique une section reçue d'un autre joueur, sans la renvoyer.
+    appliquer(cle, valeur) {
+      const defaut = etatVide()[cle];
+      etat[cle] = defaut && typeof defaut === "object" && !Array.isArray(defaut) ? fusion(defaut, valeur || {}) : valeur;
+      enregistrer();
+      const focus = document.activeElement;
+      if (cle === "piedestaux" && !(focus && $("ouvrage-form").contains(focus))) rendreOuvrageForm();
+      tout();
+    },
+  };
 })();
