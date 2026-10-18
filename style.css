@@ -1,0 +1,55 @@
+:root {
+  --fond: #f6f3ec; --carte: #fffdf8; --texte: #2b2620; --doux: #6d655a; --bord: #ddd4c4;
+  --accent: #6b8f3a; --ok: #2f7d32; --alerte: #b3261e; --info: #5a6b85;
+  --case: #efe6d3; --case-sombre: #c9b893; --etape: #f3d77a;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --fond: #1b1a17; --carte: #252320; --texte: #ece6da; --doux: #a59d90; --bord: #3d3933;
+    --accent: #9cc25d; --ok: #7cc47f; --alerte: #ff8a80; --info: #9fb3d1;
+    --case: #4a4337; --case-sombre: #2f2a22; --etape: #8a6f1d;
+  }
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--fond); color: var(--texte); font: 15px/1.5 system-ui, sans-serif; }
+header, main, footer { max-width: 1100px; margin: 0 auto; padding: 0 16px; }
+h1 { margin: 20px 0 4px; font-size: 1.6rem; }
+.sous, .aide, .petit, footer { color: var(--doux); }
+.petit { font-size: .85rem; }
+.actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin: 8px 0; }
+button, select, input { font: inherit; color: inherit; background: var(--carte); border: 1px solid var(--bord); border-radius: 6px; padding: 5px 9px; }
+button { cursor: pointer; }
+button.danger { color: var(--alerte); }
+input[type=number] { width: 4.5em; }
+#onglets { display: flex; gap: 4px; flex-wrap: wrap; border-bottom: 1px solid var(--bord); margin-top: 8px; }
+#onglets button { border-radius: 6px 6px 0 0; border-bottom: none; }
+#onglets button.actif { background: var(--accent); color: #fff; border-color: var(--accent); }
+.tab { display: none; padding: 8px 0 24px; }
+.tab.actif { display: block; }
+.carte { background: var(--carte); border: 1px solid var(--bord); border-radius: 8px; padding: 10px 12px; }
+.carte h3 { margin: 0 0 6px; font-size: 1rem; }
+.carte select { display: block; width: 100%; margin-bottom: 6px; }
+.grille4 { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; }
+.deux { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; align-items: start; }
+.ligne { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin: 10px 0; }
+.resultat { margin: 12px 0; }
+.ok { color: var(--ok); font-weight: 600; }
+.alerte { color: var(--alerte); font-weight: 600; }
+.info { color: var(--info); }
+.etapes li { margin: 4px 0; }
+.etapes li.fait { opacity: .5; text-decoration: line-through; }
+.choix { padding: 1px 6px; border-radius: 4px; cursor: pointer; }
+.choix.ok { background: color-mix(in srgb, var(--ok) 18%, transparent); }
+.plateau { overflow-x: auto; }
+.plateau table, .jardin { border-collapse: collapse; }
+.plateau th { padding: 2px 6px; color: var(--doux); font-weight: 500; }
+.plateau td, .jardin td { width: 40px; height: 40px; text-align: center; border: 1px solid var(--bord); cursor: pointer; background: var(--case); font-size: 1.3rem; }
+.echiquier td { width: 34px; height: 34px; }
+.plateau td.sombre { background: var(--case-sombre); }
+.plateau td.etape { outline: 3px dashed var(--etape); outline-offset: -4px; }
+.plateau td.bateau, .jardin td.statue { background: color-mix(in srgb, var(--accent) 35%, var(--case)); }
+.jardin td { width: 30px; height: 30px; font-size: 1rem; }
+sub { font-size: .65rem; color: var(--doux); }
+table.form td, table.form th { padding: 4px 8px; border-bottom: 1px solid var(--bord); text-align: left; }
+footer { padding-bottom: 24px; font-size: .85rem; }
+@media (max-width: 500px) { .echiquier td { width: 26px; height: 26px; font-size: 1rem; } }
