@@ -272,7 +272,6 @@
       if (inp === document.activeElement) return;
       inp.value = etat.ech.cibles[inp.dataset.c] || "";
     });
-    $("ech-form").querySelectorAll("select[data-o]").forEach((sel) => { sel.value = etat.ech.ordre[sel.dataset.o]; });
     $("ech-form").querySelectorAll("select[data-d]").forEach((sel) => { sel.value = etat.ech.departs[sel.dataset.d]; });
 
     let r = "";
@@ -296,11 +295,9 @@
     $("echecs-res").innerHTML = r;
   }
   function rendreEchecsForm() {
-    const optsOrdre = PIECES.map((p) => `<option value="${p.id}">${p.symbole} ${p.nom}</option>`).join("");
     $("ech-form").innerHTML = "<table class='form'><tr><th>Pièce</th><th>🎯 Cible</th><th>🚩 Départ</th></tr>" +
       PIECES.map((p) => `<tr><td><span class="piece ${p.camp}">${p.symbole}</span> ${p.nom}</td><td><input data-c="${p.id}" placeholder="ex. C4" size="4"></td><td><select data-d="${p.id}">${CASES_DEPART.map((c) => `<option>${c}</option>`).join("")}</select></td></tr>`).join("") +
-      "</table><p class='petit'>Ordre de jeu dans le combat :</p><div class='ordre'>" +
-      [0, 1, 2, 3].map((i) => `<span class="num">${i + 1}</span><select data-o="${i}">${optsOrdre}</select>`).join("") + "</div>";
+      "</table><p class='petit'>L'ordre de jeu est libre : le site choisit celui qui donne le placement le plus rapide.</p>";
     $("ech-form").querySelectorAll("input").forEach((inp) => inp.addEventListener("change", () => {
       const v = inp.value.trim().toUpperCase();
       etat.ech.cibles[inp.dataset.c] = v;
@@ -314,20 +311,25 @@
       d[id] = sel.value;
       sauver();
     }));
-    $("ech-form").querySelectorAll("select[data-o]").forEach((sel) => sel.addEventListener("change", () => {
-      // échange avec la position qui avait déjà cette pièce, pour garder un ordre valide
-      const o = etat.ech.ordre, i = parseInt(sel.dataset.o, 10), j = o.indexOf(sel.value);
-      [o[i], o[j]] = [o[j], o[i]];
-      sauver();
-    }));
   }
+  // L'ordre de jeu est libre : on essaie les 24 ordres et on garde celui qui place tout le monde le plus vite.
+  const permuter = (l) => (l.length <= 1 ? [l] : l.flatMap((v, i) => permuter(l.filter((_, j) => j !== i)).map((r) => [v].concat(r))));
+  const ORDRES = permuter(["tn", "tb", "fn", "fb"]);
   function calculEchecs() {
-    const pieces = etat.ech.ordre.map((id) => {
+    const piecesDans = (ordre) => ordre.map((id) => {
       const p = pieceParId(id);
       return { id, nom: p.nom, type: p.type, cible: etat.ech.cibles[id], depart: etat.ech.departs[id] };
     });
-    if (pieces.some((p) => !S.parseCase(p.cible) || !S.parseCase(p.depart))) return null;
-    return S.planifierEchecs(pieces, etat.ech.taille, 4);
+    if (piecesDans(ORDRES[0]).some((p) => !S.parseCase(p.cible) || !S.parseCase(p.depart))) return null;
+    let meilleur = null;
+    for (const ordre of ORDRES) {
+      const plan = S.planifierEchecs(piecesDans(ordre), etat.ech.taille, 4);
+      if (plan.erreur) { if (!meilleur) meilleur = plan; continue; }
+      const coups = plan.tours.flat().filter((a) => a.vers).length;
+      if (!meilleur || meilleur.erreur || plan.tours.length < meilleur.tours.length ||
+          (plan.tours.length === meilleur.tours.length && coups < meilleur.coups)) meilleur = { ...plan, coups };
+    }
+    return meilleur;
   }
   $("ech-taille").addEventListener("change", (e) => {
     etat.ech.taille = Math.max(4, Math.min(16, parseInt(e.target.value, 10) || 11)); sauver();
