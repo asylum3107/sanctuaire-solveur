@@ -7,62 +7,94 @@
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<header>
-  <h1>Sanctuaire des Jardins éternels</h1>
-  <p class="sous">Solveur des énigmes du raid de guilde. Les données restent dans ton navigateur ; le lien de partage les transmet à la guilde.</p>
+<header class="banniere">
+  <div class="banniere-int">
+    <svg class="embleme" viewBox="0 0 64 64" aria-hidden="true">
+      <circle cx="32" cy="32" r="30" fill="#ffffff22" stroke="#f3c55b" stroke-width="2"/>
+      <path d="M32 10 C22 22 22 34 32 54 C42 34 42 22 32 10Z" fill="#7ed39b"/>
+      <path d="M32 18 V50" stroke="#2c6b45" stroke-width="2"/>
+      <path d="M32 28 L25 23 M32 36 L39 31 M32 43 L26 39" stroke="#2c6b45" stroke-width="2" stroke-linecap="round"/>
+      <circle cx="32" cy="10" r="4" fill="#f3c55b"/>
+    </svg>
+    <div>
+      <h1>Sanctuaire des Jardins éternels</h1>
+      <p class="sous">Solveur des énigmes du raid de guilde Dofus. Remplis ce que tu vois en jeu, le site calcule la solution.</p>
+    </div>
+  </div>
   <div class="actions">
-    <button id="partager">Copier le lien de partage</button>
-    <button id="reset" class="danger">Tout effacer</button>
+    <button id="partager">🔗 Copier le lien de partage</button>
+    <button id="reset" class="danger">🗑️ Tout effacer</button>
     <span id="msg"></span>
   </div>
   <nav id="onglets">
-    <button data-tab="ouvrage" class="actif">1. Ouvrage</button>
-    <button data-tab="navale">2. Bataille navale</button>
-    <button data-tab="echecs">3. Échecs</button>
-    <button data-tab="clos">4. Clos</button>
-    <button data-tab="gardiens">Gardiens</button>
+    <button data-tab="ouvrage" class="actif t-ouvrage"><span>🌸</span>1. Ouvrage</button>
+    <button data-tab="navale" class="t-navale"><span>⛵</span>2. Bataille navale</button>
+    <button data-tab="echecs" class="t-echecs"><span>♜</span>3. Échecs</button>
+    <button data-tab="clos" class="t-clos"><span>🗿</span>4. Clos</button>
+    <button data-tab="gardiens" class="t-gardiens"><span>⚔️</span>Gardiens</button>
   </nav>
+  <div id="progression"></div>
 </header>
 
 <main>
 <!-- OUVRAGE -->
-<section id="tab-ouvrage" class="tab actif">
-  <h2>Ouvrage Monochrome : fleurs en papier</h2>
-  <p class="aide">Note les 2 objets de chaque piédestal du Clos des Protecteurs (I et III en [11,21], II et IV en [12,20]). Le solveur te donne les 2 maps de l'Ouvrage à vérifier pour chaque piédestal, dans l'ordre. Une seule des deux contient la fleur : coche-la quand tu l'as trouvée.</p>
-  <div id="ouvrage-form" class="grille4"></div>
-  <div id="ouvrage-res" class="resultat"></div>
-  <label class="ligne">Couleur obtenue après les 4 fleurs :
-    <select id="couleur">
-      <option value="">?</option>
-      <option value="orange">Orange (ambré)</option>
-      <option value="bleu">Bleu (azuré)</option>
-      <option value="rouge">Rouge (écarlate)</option>
-      <option value="vert">Vert (viridine)</option>
-    </select>
-  </label>
+<section id="tab-ouvrage" class="tab actif t-ouvrage">
+  <div class="titre-section"><span class="pastille-ico">🌸</span>
+    <div><h2>Ouvrage Monochrome : fleurs en papier</h2><p class="aide">Trouver les 4 fleurs dans le bon ordre pour obtenir une couleur.</p></div></div>
+  <ol class="comment">
+    <li><b>Clos des Protecteurs</b> : note les 2 objets de chaque piédestal (I et III en [11,21], II et IV en [12,20]).</li>
+    <li><b>Ouvrage</b> : pour chaque piédestal, dans l'ordre I → IV, va voir les 2 maps indiquées. Une seule a une fleur : coche-la ici, puis clique la fleur en jeu.</li>
+    <li>Après les 4 fleurs, note la <b>couleur</b> qui s'affiche : elle sert au Clos et à la Sentinelle.</li>
+  </ol>
+  <div class="deux large-gauche">
+    <div>
+      <div id="ouvrage-form" class="grille4"></div>
+      <div id="ouvrage-res" class="resultat"></div>
+      <h3>Couleur obtenue</h3>
+      <div id="couleurs" class="couleurs"></div>
+    </div>
+    <div>
+      <h3>Plan de l'Ouvrage</h3>
+      <div id="plan-ouvrage"></div>
+      <p class="petit">Pointillés = maps à vérifier. Vert = fleur trouvée (avec son numéro d'ordre).</p>
+    </div>
+  </div>
 </section>
 
 <!-- NAVALE -->
-<section id="tab-navale" class="tab">
-  <h2>Réserve de Belladone : bataille navale</h2>
-  <p class="aide">Après avoir dévoilé les 6 bateaux en papier dans l'Ouvrage, clique sur chaque grille les cases où un bateau est apparu <b>sur cette map</b>. Le solveur donne l'ordre exact des tirs. Ne vise jamais tes propres bateaux : une erreur remet tout à zéro et coûte 1 PV. Dans l'Ouvrage, ne clique pas les fleurs en cherchant les bateaux : une mauvaise fleur coûte aussi 1 PV.</p>
-  <div class="ligne">
-    Colonnes <input type="number" id="nav-cols" min="2" max="10"> Lignes <input type="number" id="nav-rows" min="2" max="10">
-  </div>
+<section id="tab-navale" class="tab t-navale">
+  <div class="titre-section"><span class="pastille-ico">⛵</span>
+    <div><h2>Réserve de Belladone : bataille navale</h2><p class="aide">Couler les 6 bateaux, 3 sur chaque map, en tirant chacun son tour.</p></div></div>
+  <ol class="comment">
+    <li><b>Ouvrage</b> : trouve les 6 bateaux en papier et clique « Dévoiler la position ». Ne clique pas les fleurs, une mauvaise fleur coûte 1 PV.</li>
+    <li><b>Réserve</b> : sur chaque grille ci-dessous, clique les cases où un bateau est apparu <b>sur cette map</b>.</li>
+    <li>Suis l'ordre des tirs : boule lettre puis boule chiffre. Ne vise jamais tes propres bateaux (erreur = tout recommence et 1 PV).</li>
+  </ol>
+  <div class="ligne petit">Taille des grilles : <input type="number" id="nav-cols" min="2" max="10"> lettres × <input type="number" id="nav-rows" min="2" max="10"> chiffres</div>
   <div class="deux">
-    <div><h3>Map [21,17] (joue en premier)</h3><div id="nav-a" class="plateau"></div></div>
-    <div><h3>Map [19,15]</h3><div id="nav-b" class="plateau"></div></div>
+    <div class="carte mer map-a"><h3><span class="badge badge-a">A</span> Map [21,17] <span class="petit">joue en premier</span></h3><div id="nav-a" class="plateau"></div></div>
+    <div class="carte mer map-b"><h3><span class="badge badge-b">B</span> Map [19,15]</h3><div id="nav-b" class="plateau"></div></div>
   </div>
+  <h3>Ordre des tirs</h3>
   <div id="navale-res" class="resultat"></div>
 </section>
 
 <!-- ECHECS -->
-<section id="tab-echecs" class="tab">
-  <h2>Cour d'Éphèdre : échecs contre Belladone</h2>
-  <p class="aide">Après avoir parlé à Belladone en [12,14], clique les pièces des 4 échiquiers de la Réserve. Note la case des 4 pièces vertes (Tour blanche, Tour noire, Fou blanc, Fou noir). Au début du combat, renseigne la case de départ de chaque pièce et l'ordre de jeu (la tour noire joue en premier) : le solveur donne les déplacements tour par tour, sans que les pièces se bloquent (4 tours maximum ; une pièce bien placée peut donner des PA à un allié).</p>
-  <div class="ligne">Taille de l'échiquier <input type="number" id="ech-taille" min="4" max="16">
-    <span class="petit">Clique une case du plateau pour y placer l'élément choisi :</span>
-    <select id="ech-outil"></select>
+<section id="tab-echecs" class="tab t-echecs">
+  <div class="titre-section"><span class="pastille-ico">♜</span>
+    <div><h2>Cour d'Éphèdre : échecs contre Belladone</h2><p class="aide">Retrouver 4 pièces, puis les incarner en combat et rejoindre leurs cases en 4 tours.</p></div></div>
+  <ol class="comment">
+    <li><b>Cour d'Éphèdre [12,14]</b> : parle à Belladone pour faire apparaître les pièces dans la Réserve.</li>
+    <li><b>Réserve</b> : clique les pièces. Les 4 qui passent au vert sont les cibles (♖ ♜ ♗ ♝). Note leur case.</li>
+    <li><b>Combat à 4</b> : note la case de départ de chaque pièce. Le site donne les déplacements tour par tour, dans l'ordre de jeu (la tour noire commence).</li>
+  </ol>
+  <div class="regles">
+    <div class="regle"><span class="gros">♜</span><span><b>Tour</b> : se déplace en ligne droite.</span><svg viewBox="0 0 60 60"><rect x="0" y="0" width="60" height="60" rx="6" class="svg-fond"/><path d="M30 6V54M6 30H54" class="svg-fleche"/><text x="30" y="35" text-anchor="middle" class="svg-piece">♜</text></svg></div>
+    <div class="regle"><span class="gros">♝</span><span><b>Fou</b> : se déplace en diagonale, reste sur la même couleur de case.</span><svg viewBox="0 0 60 60"><rect x="0" y="0" width="60" height="60" rx="6" class="svg-fond"/><path d="M8 8L52 52M52 8L8 52" class="svg-fleche"/><text x="30" y="35" text-anchor="middle" class="svg-piece">♝</text></svg></div>
+    <div class="regle"><span class="gros">⚡</span><span><b>Don de PA</b> : une pièce déjà bien placée peut donner des PA à un allié.</span></div>
+  </div>
+  <div class="ligne petit">Taille de l'échiquier <input type="number" id="ech-taille" min="4" max="16">
+    Clic sur le plateau pour placer : <select id="ech-outil"></select>
   </div>
   <div class="deux">
     <div id="ech-plateau" class="plateau"></div>
@@ -74,31 +106,41 @@
 </section>
 
 <!-- CLOS -->
-<section id="tab-clos" class="tab">
-  <h2>Clos des Protecteurs : statues</h2>
-  <p class="aide">Dans le Clos, note les 3 statues de chaque jardin (clic sur une case = statue, re-clic = efface). Reproduis-les dans la Cour : la map à droite du portail du Clos correspond à la map à droite du portail de la Cour. Valide chaque jardin avec le bouton lumineux : une erreur de validation coûte 1 PV, mais se tromper de case pendant le placement ne coûte rien.</p>
-  <div class="ligne">Taille des jardins <input type="number" id="clos-taille" min="3" max="10"></div>
+<section id="tab-clos" class="tab t-clos">
+  <div class="titre-section"><span class="pastille-ico">🗿</span>
+    <div><h2>Clos des Protecteurs : statues</h2><p class="aide">Reproduire 4 jardins, puis combattre le bon protecteur.</p></div></div>
+  <ol class="comment">
+    <li><b>Clos</b> : note les 3 statues de chaque jardin (clic = statue, re-clic = efface).</li>
+    <li><b>Cour</b> : reproduis-les sur le jardin à la même place par rapport au portail, puis valide avec le bouton lumineux (erreur de validation = 1 PV, erreur de placement = gratuit).</li>
+    <li>Une statue apparaît au centre [11,20] : choisis-la ci-dessous pour savoir où combattre.</li>
+  </ol>
+  <div class="ligne petit">Taille des jardins <input type="number" id="clos-taille" min="3" max="10"></div>
   <div id="jardins" class="grille4"></div>
   <h3>Protecteur à combattre</h3>
-  <div class="ligne">
-    Statue apparue au centre [11,20] :
-    <select id="statue"><option value="">?</option></select>
-    <span class="petit">Couleur de l'Ouvrage : <b id="clos-couleur">?</b></span>
+  <div class="deux">
+    <div>
+      <p class="petit">Statue apparue au centre :</p>
+      <div id="statues" class="statues"></div>
+      <p class="petit">Couleur de l'Ouvrage : <span id="clos-couleur"></span></p>
+      <div id="clos-res" class="resultat"></div>
+    </div>
+    <div>
+      <div id="plan-clos"></div>
+    </div>
   </div>
-  <div id="clos-res" class="resultat"></div>
 </section>
 
 <!-- GARDIENS -->
-<section id="tab-gardiens" class="tab">
-  <h2>Gardiens : ce qu'il faut faire</h2>
-  <p class="aide">Calculé à partir des énigmes résolues.</p>
-  <div id="gardiens-res" class="resultat"></div>
-  <h3>Table complète du Clos (statue + couleur → map)</h3>
-  <div id="table-clos"></div>
+<section id="tab-gardiens" class="tab t-gardiens">
+  <div class="titre-section"><span class="pastille-ico">⚔️</span>
+    <div><h2>Gardiens : ce qu'il faut faire</h2><p class="aide">Calculé automatiquement à partir des énigmes résolues.</p></div></div>
+  <div id="gardiens-res" class="grille2"></div>
+  <h3>Table complète du Clos (couleur + statue → map)</h3>
+  <div id="table-clos" class="defile"></div>
 </section>
 </main>
 
-<footer>Données de mécaniques d'après les guides communautaires (Dofus pour les Noobs, SigilOS). Si une règle a changé en jeu, signale-le.</footer>
+<footer>Mécaniques d'après les guides communautaires (Dofus pour les Noobs, SigilOS). Les données restent dans ton navigateur ; le lien de partage les transmet à la guilde.</footer>
 
 <script src="solveurs.js"></script>
 <script src="app.js"></script>
